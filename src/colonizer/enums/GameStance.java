@@ -24,4 +24,7 @@ public enum GameStance {
         return availableCommands.contains (command);
     }
 
+    public List<String> getAvailableCommands () {
+        return availableCommands;
+    }
 }

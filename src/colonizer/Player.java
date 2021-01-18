@@ -1,15 +1,16 @@
 package colonizer;
 
 import colonizer.enums.ActionCardType;
+import colonizer.enums.HexagonType;
 import colonizer.enums.ResourceCardType;
 import colonizer.map.Hexagon;
 import colonizer.map.Intersection;
 import colonizer.map.Road;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import static colonizer.enums.ActionCardType.YEAR_OF_PLENTY;
-import static colonizer.enums.ResourceCardType.*;
 
 public class Player {
     // Village - 🏠
@@ -80,24 +81,25 @@ public class Player {
 
     int calculatedPoints; // #mb function?
 
-    Player (int id) {
+    Player (int id, GameTable gameTable) {
         this.id = id;
+        this.table = gameTable;
 
         leftRoads = 15;
         leftVillages = 5;
         leftCities = 4;
 
-        resources[RES_WOOD.id] = 0;
-        resources[RES_WOOL.id] = 0;
-        resources[RES_WHEAT.id] = 0;
-        resources[RES_STONE.id] = 0;
-        resources[RES_CLAY.id] = 0;
+        resources[ResourceCardType.RES_WOOD.id] = 0;
+        resources[ResourceCardType.RES_WOOL.id] = 0;
+        resources[ResourceCardType.RES_WHEAT.id] = 0;
+        resources[ResourceCardType.RES_STONE.id] = 0;
+        resources[ResourceCardType.RES_CLAY.id] = 0;
 
-        canTrade2for1[RES_WOOD.id] = false;
-        canTrade2for1[RES_WOOL.id] = false;
-        canTrade2for1[RES_WHEAT.id] = false;
-        canTrade2for1[RES_STONE.id] = false;
-        canTrade2for1[RES_CLAY.id] = false;
+        canTrade2for1[ResourceCardType.RES_WOOD.id] = false;
+        canTrade2for1[ResourceCardType.RES_WOOL.id] = false;
+        canTrade2for1[ResourceCardType.RES_WHEAT.id] = false;
+        canTrade2for1[ResourceCardType.RES_STONE.id] = false;
+        canTrade2for1[ResourceCardType.RES_CLAY.id] = false;
 
         canTrade3for1 = false;
 
@@ -111,11 +113,14 @@ public class Player {
             for (int j = 0; j < 5; ++j)
                 resourceGainingNumbers[i][j] = 0;
 
-        resourceGain[RES_WOOD.id] = 0;
-        resourceGain[RES_WOOL.id] = 0;
-        resourceGain[RES_WHEAT.id] = 0;
-        resourceGain[RES_STONE.id] = 0;
-        resourceGain[RES_CLAY.id] = 0;
+        resourceGain[ResourceCardType.RES_WOOD.id] = 0;
+        resourceGain[ResourceCardType.RES_WOOL.id] = 0;
+        resourceGain[ResourceCardType.RES_WHEAT.id] = 0;
+        resourceGain[ResourceCardType.RES_STONE.id] = 0;
+        resourceGain[ResourceCardType.RES_CLAY.id] = 0;
+
+        placedVillages = new ArrayList<>();
+        placedCities = new ArrayList<>();
 
     }
 
@@ -151,6 +156,7 @@ public class Player {
         return true;
     }
     void pay (int[] cost) {
+        table.pay(cost);
         for(int i = 0; i < 5; ++i) {
             resources[i] -= cost[i];
         }
@@ -172,20 +178,27 @@ public class Player {
     // ACTIONS
 
     void pickStartingVillage (Intersection intersection) {
-        if (leftVillages > 0 && intersection.canBuildVillage()) {
+        if (leftVillages > 0 && intersection.canPickVillage(id)) {
             intersection.buildVillage(id);
+            placedVillages.add(intersection);
             leftVillages -= 1;
 
             //AKA Second starting village
             if(leftVillages == 3) {
-                for(Hexagon hexagon : intersection.neighborHexagons) {
+                for(Hexagon hexagon : intersection.getNeighborHexagons()) {
                     if (hexagon.rollNumber >= 2) {
                         getResource (ResourceCardType.values ()[hexagon.hexagonType.id], 1);
                     }
                 }
             }
 
-            for(Hexagon current : intersection.neighborHexagons) {
+            for(Hexagon current : intersection.getNeighborHexagons()) {
+                if (current.hexagonType == HexagonType.ANY_HARBOR) {
+                    canTrade3for1 = true;
+                } else
+                if (20 <= current.hexagonType.id && current.hexagonType.id <= 24) {
+                    canTrade2for1[current.hexagonType.id-20] = true;
+                } else
                 if(current.rollNumber >= 2 && !current.isRobbed) {
                     setResourceGain(current.hexagonType.id, 1, current.rollNumber);
                 }
@@ -195,12 +208,19 @@ public class Player {
 
     // Build
     void buildVillage (Intersection intersection) {
-        if (canPay(VILLAGE_COST) && leftVillages > 0 && intersection.canBuildVillage()) {
+        if (canPay(VILLAGE_COST) && leftVillages > 0 && intersection.canBuildVillage(id)) {
             pay(VILLAGE_COST);
             intersection.buildVillage(id);
             leftVillages -= 1;
+            placedVillages.add(intersection);
 
-            for(Hexagon current : intersection.neighborHexagons) {
+            for(Hexagon current : intersection.getNeighborHexagons()) {
+                if (current.hexagonType == HexagonType.ANY_HARBOR) {
+                    canTrade3for1 = true;
+                } else
+                if (20 <= current.hexagonType.id && current.hexagonType.id <= 24) {
+                    canTrade2for1[current.hexagonType.id-20] = true;
+                } else
                 if(current.rollNumber >= 2 && !current.isRobbed) {
                     setResourceGain(current.hexagonType.id, 1, current.rollNumber);
                 }
@@ -212,22 +232,23 @@ public class Player {
             pay(CITY_COST);
             intersection.buildCity(id);
             leftCities -= 1;
+            leftVillages += 1;
+            placedVillages.remove(intersection);
+            placedCities.add(intersection);
 
-            for(Hexagon current : intersection.neighborHexagons) {
+            for(Hexagon current : intersection.getNeighborHexagons()) {
                 if(current.rollNumber >= 2 && !current.isRobbed) {
                     setResourceGain(current.hexagonType.id, 1, current.rollNumber);
                 }
             }
         }
     }
-    void buildRoad (Intersection from, Intersection to) {
-//        Road roadToBuild = new Road(from, to);#TODO
-//
-//        if (canPay(ROAD_COST) && leftRoads > 0 && roadToBuild.isValid()) {
-//            pay(ROAD_COST);
-//            table.buildRoad(roadToBuild);
-//            leftRoads -= 1;
-//        }
+    void buildRoad (Road road) {
+        if (canPay(ROAD_COST) && leftRoads > 0 && road.canBuildRoad(id)) {
+            pay(ROAD_COST);
+            road.buildRoad(id);
+            leftRoads -= 1;
+        }
     }
     // Buy
     void buyActionCard () {
@@ -243,6 +264,7 @@ public class Player {
 
         if (canPay(cost)) {
             pay(cost);
+            table.drawResourceCard(to.id);
             resources[to.id] ++;//#TODO track resouce cards
         }
     }
@@ -252,6 +274,7 @@ public class Player {
 
         if (canPay(cost) && canTrade3for1) {
             pay(cost);
+            table.drawResourceCard(to.id);
             resources[to.id] ++;
         }
     }
@@ -261,6 +284,7 @@ public class Player {
 
         if (canPay(cost) && canTrade2for1[to.id]) {
             pay(cost);
+            table.drawResourceCard(to.id);
             resources[to.id] ++;
         }
     }
@@ -286,7 +310,6 @@ public class Player {
     }
     // PASS
     void pass () {
-        //#TODO
         table.nextTurn();
     }
 
@@ -300,8 +323,27 @@ public class Player {
         resources[type.id] -= num;
     }
 
-    ResourceCardType loseRandomResource (int num) {
-        return RES_CLAY;//#TODO
+    ResourceCardType loseRandomResource (){
+        int res_index;
+        do {
+            res_index = (int) (Math.random() * ResourceCardType.values().length);
+        } while(resources[res_index] <= 0);
+
+        resources[res_index] -= 1;
+
+        return ResourceCardType.values()[res_index];
+    }
+
+    void loseRandomResource (int num) {
+        while (getHandSize() > num) {//Not the nicest solution
+            int res_index = (int) (Math.random() * ResourceCardType.values().length);
+
+            if (resources[res_index] <= 0) {
+                continue;
+            }
+
+            resources[res_index] -= 1;
+        }
     }
 
     void getResource (ResourceCardType type, int num) {
@@ -314,33 +356,14 @@ public class Player {
     void choseRobberPlace (Hexagon to){
         table.placeRobber(to, false);
     }
+
+    public int getPoints() {
+        return placedVillages.size() * 1 +
+                placedCities.size() * 2 +
+                actionCards[ActionCardType.POINT_CARD.id] +
+                (hasLongestRoute ? 2 : 0) +
+                (hasBiggestArmy ? 2 : 0);
+    }
 //    void tradeWithAnotherPlayer(); #TODO
-
-
-    // Available Actions (refresh after every action)
-//
-//    bool availableActions[12];
-//    std::vector<void*>availableActionsOptions [12];
-//    int availableActionsLength[12];
-//
-//    void refreshAvailableActions ();
-//
-//    void listAvailableActions ();
-//
-//    void doAction (ActionType action, int chosenOption);
-//
-//    // Available Options / player
-//    std::vector<Road*>
-//
-//    availableRoadConstructions ();
-//
-//    std::vector<Intersection*>
-//
-//    availableVillageConstructions ();
-//
-//    std::vector<Intersection*>
-//
-//    availableCityConstructions ();
-
 
 }

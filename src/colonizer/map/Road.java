@@ -2,18 +2,16 @@ package colonizer.map;
 
 import colonizer.enums.NodeType;
 
-import static colonizer.enums.Direction.*;
-
 public class Road extends Position {
     public Intersection from;
     public Intersection to;
 
     //FROM , where the x or the y coordinate is lower
-    private Position fromIntersectionPosition;
+    private final Position fromIntersectionPosition;
     //TO , where the x or the y coordinate is higher
-    private Position toIntersectionPosition;
+    private final Position toIntersectionPosition;
 
-    int owned = -1;
+    public int owner = -1;
 
 //    public Road (Intersection from, Intersection to) {
 //        this.from = from;
@@ -41,8 +39,13 @@ public class Road extends Position {
         return toIntersectionPosition;
     }
 
-    public boolean isValid () {
-        return false;
+    public void buildRoad(int playerId) {
+        owner = playerId;
+    }
+
+    //Checks if it is buildable by the player
+    public boolean canBuildRoad(int playerId) {
+        return from.isReachable(playerId) || to.isReachable(playerId);
 //#TODO
 //        int x1 = from.x;
 //        int y1 = from.y;

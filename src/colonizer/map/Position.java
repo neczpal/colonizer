@@ -21,7 +21,7 @@ public class Position {
         this.nodeType = nodeType;
     }
 
-    public Position getPositionInDirection (Direction dir) {
+    protected Position getPositionInDirection (Direction dir) {
         switch (nodeType) {
             case HEXAGON:
                 return moveToHexagon (dir);

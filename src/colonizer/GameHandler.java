@@ -1,8 +1,5 @@
 package colonizer;
 
-import colonizer.enums.HexagonType;
-import colonizer.map.Intersection;
-
 public class GameHandler {
 
 

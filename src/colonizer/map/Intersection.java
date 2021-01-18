@@ -21,9 +21,9 @@ public class Intersection extends Position {
     private final List<Position> neighborHexagonPositions = new ArrayList<> ();
     private final List<Position> neighborRoadPositions = new ArrayList<> ();
 
-    public List<Hexagon> neighborIntersections = new ArrayList<> ();
-    public List<Hexagon> neighborHexagons = new ArrayList<> ();
-    public List<Hexagon> neighborRoads = new ArrayList<> ();
+    private List<Intersection> neighborIntersections = new ArrayList<> ();
+    private List<Hexagon> neighborHexagons = new ArrayList<> ();
+    private List<Road> neighborRoads = new ArrayList<> ();
 
 
     Intersection () {
@@ -129,12 +129,22 @@ public class Intersection extends Position {
         production = 2;
     }
 
-    public void addNeighbour (Hexagon neighbor) {
+    public void addNeighborHexagon(Hexagon neighbor) {
         neighborHexagons.add (neighbor);
     }
+    public void addNeighborIntersection(Intersection neighbor) {
+        neighborIntersections.add (neighbor);
+    }
 
-    public boolean canBuildVillage () {
-        return isEmpty && noNeighboorRule ();
+    public void addNeighborRoad(Road neighbor) {
+        neighborRoads.add (neighbor);
+    }
+
+    public boolean canBuildVillage (int playerId) {
+        return owned == -1 && isEmpty && noNeighborRule() && isReachable(playerId);
+    }
+    public boolean canPickVillage (int playerId) {
+        return owned == -1 && isEmpty && noNeighborRule();
     }
 
     public boolean canBuildCity (int playerId) {
@@ -169,8 +179,38 @@ public class Intersection extends Position {
         return neighborIntersectionPositions;
     }
 
+    public List<Position> getNeighborRoadPositions () {
+        return neighborRoadPositions;
+    }
 
-    private boolean noNeighboorRule () {
-        return true;//#TODOOO
+    public List<Road> getNeighborRoads () {
+        return neighborRoads;
+    }
+
+    public List<Hexagon> getNeighborHexagons () {
+        return neighborHexagons;
+    }
+    public List<Intersection> getNeighborIntersections () {
+        return neighborIntersections;
+    }
+
+
+    private boolean noNeighborRule() {
+        for(Intersection intersection : getNeighborIntersections()) {
+            if (intersection.owned != -1) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+    protected boolean isReachable (int playerId) {
+        for(Road road : getNeighborRoads()) {
+            if (road.owner == playerId) {
+                return true;
+            }
+        }
+
+        return owned == playerId;
     }
 }
