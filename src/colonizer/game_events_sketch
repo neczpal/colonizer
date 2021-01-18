@@ -1,0 +1,46 @@
+#Preparing
+    #Shuffling Action Card deck
+    #Shuffling Map pieces
+    #Shuffling Resource numbers (not sure)
+    #Shuffling Player order
+    #Generating Map
+#Pre-Game
+    #1st village pick
+        #1st player pick village
+        #2nd player pick village
+        #3rd player pick village
+        #(4th player pick village)
+    #2nd village pick + getting starting resources
+        #(4th player pick village)
+        #3rd player pick village
+        #2nd player pick village
+        #1st player pick village
+#Game
+    [Each (i) player]
+        # Player (i) turn
+        # Pre-roll actions
+            #Playing action card
+                #Monopoly
+                #Knight
+                #etc.
+            #Roll
+                #Case (7) -> Multicast event anyone above 7+ res card has to discard resources
+                #Chose robber position
+                    #Case (Hexagon) has more than 1 neighbour chose enemy player to rob
+
+        # Post-roll actions
+            #Playing action card (the ones just bought are unplayable)
+            #Build
+                #Village
+                #Road
+                #City
+            #Buy action card
+            #Trade with Bank/Players
+            #End turn ++i
+
+#Game end if someone gets 10+ Point asap
+
+#End game statistics and stuff
+
+
+
